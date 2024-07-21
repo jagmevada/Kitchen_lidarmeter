@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"type": "PlatformIO",
-			"task": "Upload (ATtiny3226)",
+			"task": "Upload (ATtiny3224)",
 			"problemMatcher": [
 				"$platformio"
 			],
