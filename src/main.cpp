@@ -28,7 +28,7 @@ typedef ADC_MUXPOS_t adc_0_channel_t;
 #define SW_INTCTRL PORTA.PIN6CTRL
 #define OUTPUT_PINMASK PIN5_bm
 #define DEBOUNCE_PERIOD 5     /// Multiple of 128ms
-#define AUTOOFF_TIMEOUT 2445  // 3130  Multiple of 128ms or 100ms
+#define AUTOOFF_TIMEOUT 2445  // 2445  // 3130  Multiple of 128ms or 100ms
 #define ADC_PERIOD 156        // 20s at multiple of 128ms
 #define BAT_LOW_TIMEOUT 7
 #define UTH 3200
@@ -114,8 +114,8 @@ int8_t ADC0_Initialize(void) {
   // Window comparator low threshold
   ADC0.WINLT = 0x0;
 
-  // ENABLE enabled; LOWLAT disabled; RUNSTDBY disabled;
-  ADC0.CTRLA = 0x1;
+  // ENABLE disabled; LOWLAT disabled; RUNSTDBY disabled;
+  ADC0.CTRLA = 0x0;
 
   return 0;
 }
@@ -151,10 +151,13 @@ void button_input(void) {
     PORTA.OUT |= OUTPUT_PINMASK;  // turn on again but
     ADC0_Enable();
     timeout = AUTOOFF_TIMEOUT;
+    pinMode(0, INPUT);             // ADC
   } else {                         // LDO to be turned off
     PORTA.OUT &= ~OUTPUT_PINMASK;  // turn off LDO bat low
     ADC0_Disable();
     timeout = 0;
+    pinMode(0, OUTPUT);  // ADC
+    digitalWrite(0, LOW);
   }
   //}
   PORTA.INTFLAGS = 0x40;  // PA6 // clear INTFLAG
@@ -195,10 +198,10 @@ void setup_timer_rtc() {
   RTC.PITCTRLA = RTC_PERIOD_CYC128_gc | RTC_PITEN_bm;  // every 2 sec interrupt
   RTC.PITINTCTRL = RTC_PI_bm;                          // enable interrupt
 }
-
 //@@@@@@@@@@@@@@@@@@@@@@@@@  SETUP  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 void setup() {
-  pinMode(0, INPUT);  // ADC
+  pinMode(0, OUTPUT);  // ADC
+  digitalWrite(0, LOW);
   SETUPLDO();
   LDODISABLE();
   pinMode(2, INPUT);  // SW IN external pulled up
@@ -206,6 +209,7 @@ void setup() {
   digitalWrite(3, LOW);
   // it is external pulled down pinMode(5, INPUT_PULLUP);
   pinMode(4, INPUT_PULLUP);
+  pinMode(5, INPUT_PULLUP);
   pinMode(6, INPUT_PULLUP);
   pinMode(7, INPUT_PULLUP);
   pinMode(8, INPUT_PULLUP);
@@ -223,14 +227,16 @@ void setup() {
   // set_sleep_mode(SLEEP_MODE_IDLE); //380UA
   batstate = HIGH;
   new_input = 0;
+  // ADC0_Disable();
   set_sleep_mode(SLEEP_MODE_STANDBY);
-  sleep_enable();
+
   attachInterrupt(SWINPUT, button_input, FALLING);
   // setup_timer_a();
   ADC0_Initialize();
   ADC0_Disable();
   // setup_timer_b0(); // use either a0 or b0
   setup_timer_rtc();
+  sleep_enable();
   sei();  // Enable global interrupts
 }
 
@@ -297,10 +303,9 @@ ISR(RTC_PIT_vect) {  /// 128 msec timer
       }
     }
   }
-
+  sleep_enable();
   RTC.PITINTFLAGS = RTC_PI_bm; /* Clear the interrupt flag */
 }
-
 // ************************* ISR ADC Result ready  ***************************
 ISR(ADC0_RESRDY_vect) {
   /* Insert your ADC result ready interrupt handling code here */

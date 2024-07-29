@@ -7,7 +7,7 @@
 			"problemMatcher": [
 				"$platformio"
 			],
-			"label": "PlatformIO: Upload (ATtiny3226)"
+			"label": "PlatformIO: Upload (ATtiny3224)"
 		}
 	]
 }
