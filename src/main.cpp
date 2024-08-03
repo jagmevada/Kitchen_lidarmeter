@@ -66,7 +66,9 @@ void presleep() {
   Serial1.end();
   pinMode(8, OUTPUT);
   digitalWrite(8, 0);
-  pinMode(9, INPUT_PULLUP);
+  pinMode(9, OUTPUT);
+  digitalWrite(9, 0);
+  // pinMode(9, INPUT_PULLUP);
 }
 
 // // ######################### init variables #########################
@@ -79,7 +81,7 @@ void init_variable() {
   vbatx = 4095;
   t0 = DEBOUNCE_PERIOD;
   t2 = 0;
-  t1 = 20;
+  t1 = 9;
   timeout = 0;
   txready = 0;
 }
@@ -146,7 +148,7 @@ void button_input(void) {
   if (ldostate) {                 // LDO to be turned on
     PORTA.OUT |= OUTPUT_PINMASK;  // turn on again but
     ADC0_Enable();
-    t1 = 20;
+    t1 = 3;
     timeout = AUTOOFF_TIMEOUT;
     pinMode(0, INPUT);  // ADC
     pinMode(8, INPUT_PULLUP);
@@ -222,7 +224,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   // ADC0.CTRLA &= ~ADC_ENABLE_bm;
   if (txready) {
-    Serial1.write((uint8_t)(vbatx / 20));
+    Serial1.write((uint8_t)(vbat / 20));
     txready = 0;
   }
   if (ldostate == 0) {
@@ -256,7 +258,6 @@ ISR(RTC_PIT_vect) {  /// 128 msec timer
       t1 = ADC_PERIOD;
       vbatx = vbat;  // Copy previous conversoin result
       ADC0_StartConversion(ADC_MUXPOS_AIN4_gc);
-      txready = 1;
     }
     t1--;
 
@@ -281,7 +282,7 @@ ISR(RTC_PIT_vect) {  /// 128 msec timer
 ISR(ADC0_RESRDY_vect) {
   /* Insert your ADC result ready interrupt handling code here */
   vbat = (uint16_t)ADC0.RESULT;
-
+  txready = 1;
   /* The interrupt flag has to be cleared manually */
   ADC0.INTFLAGS = ADC_RESRDY_bm;
 }
